@@ -11,12 +11,13 @@ const statItems = [
   { key: "neverPlayed", label: "Aldrig spelade" },
   { key: "playing", label: "Pågående" },
   { key: "finished", label: "Klara" },
+  { key: "readyToDrop", label: "Okej att släppa" },
   { key: "totalPlaytimeMinutes", label: "Total speltid" },
 ] as const;
 
 export function StatsCards({ stats }: StatsCardsProps) {
   return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
       {statItems.map((item) => {
         const value =
           item.key === "totalPlaytimeMinutes"

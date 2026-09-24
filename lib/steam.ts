@@ -1,81 +1,109 @@
+import { getHltbTimes } from "@/lib/hltb";
+import { calculateKlartNog } from "@/lib/klart-nog";
 import { mockGames } from "@/lib/mock-games";
+import {
+  fetchGlobalAchievementPercentages,
+  fetchOwnedGames,
+  fetchPlayerAchievements,
+  getSteamApiKey,
+  mapWithConcurrency,
+  resolveSteamId,
+  SteamApiError,
+} from "@/lib/steam-api";
 import type { GamesResponse, RawGame } from "@/lib/types";
-
-type SteamOwnedGame = {
-  appid: number;
-  name?: string;
-  playtime_forever?: number;
-};
-
-type SteamOwnedGamesResponse = {
-  response?: {
-    game_count?: number;
-    games?: SteamOwnedGame[];
-  };
-};
 
 const steamCover = (appId: number) =>
   `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
 
-function mapSteamGames(games: SteamOwnedGame[]): RawGame[] {
-  return games
-    .filter((game) => Boolean(game.name))
-    .map((game) => ({
-      appId: game.appid,
-      title: game.name ?? "Okänt spel",
-      playtimeMinutes: game.playtime_forever ?? 0,
-      coverUrl: steamCover(game.appid),
-    }))
-    .sort((a, b) => a.title.localeCompare(b.title, "sv"));
+async function enrichGame(
+  steamId: string,
+  game: { appId: number; title: string; playtimeMinutes: number },
+): Promise<RawGame> {
+  const [hltb, playerAchievements, globalPercentages] = await Promise.all([
+    getHltbTimes(game.title),
+    game.playtimeMinutes > 0
+      ? fetchPlayerAchievements(steamId, game.appId)
+      : Promise.resolve([]),
+    game.playtimeMinutes > 0
+      ? fetchGlobalAchievementPercentages(game.appId)
+      : Promise.resolve({} as Record<string, number>),
+  ]);
+
+  const globalAchievementPercents = Object.values(globalPercentages);
+  const unlockedAchievementCount = playerAchievements.filter(
+    (achievement) => achievement.unlocked,
+  ).length;
+
+  const klartNog = calculateKlartNog({
+    playtimeMinutes: game.playtimeMinutes,
+    hltbMainHours: hltb?.mainHours ?? null,
+    hltbExtraHours: hltb?.extraHours ?? null,
+    globalAchievementPercents,
+    unlockedAchievementCount,
+  });
+
+  return {
+    appId: game.appId,
+    title: game.title,
+    playtimeMinutes: game.playtimeMinutes,
+    coverUrl: steamCover(game.appId),
+    klartNog,
+  };
 }
 
-export async function getLibraryGames(): Promise<GamesResponse> {
-  const apiKey = process.env.STEAM_API_KEY;
-  const steamId = process.env.STEAM_ID;
+export async function getLibraryGames(
+  steamInput?: string,
+): Promise<GamesResponse> {
+  const hasApiKey = Boolean(getSteamApiKey());
+  const trimmedInput = steamInput?.trim();
 
-  if (!apiKey || !steamId) {
+  if (!trimmedInput || !hasApiKey) {
     return {
       source: "mock",
       games: mockGames.games,
+      hasApiKey,
+      message: !hasApiKey
+        ? "Ingen Steam API-nyckel på servern — visar exempelbibliotek."
+        : "Ange Steam-id eller vanity-URL i inställningarna för att synka.",
     };
   }
 
   try {
-    const url = new URL(
-      "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/",
+    const steamId = await resolveSteamId(trimmedInput);
+    const ownedGames = await fetchOwnedGames(steamId);
+
+    const sortedGames = ownedGames.sort((a, b) =>
+      a.title.localeCompare(b.title, "sv"),
     );
-    url.searchParams.set("key", apiKey);
-    url.searchParams.set("steamid", steamId);
-    url.searchParams.set("include_appinfo", "1");
-    url.searchParams.set("include_played_free_games", "1");
-    url.searchParams.set("format", "json");
 
-    const response = await fetch(url, {
-      next: { revalidate: 300 },
-    });
+    const enrichedGames = await mapWithConcurrency(
+      sortedGames,
+      4,
+      (game) => enrichGame(steamId, game),
+    );
 
-    if (!response.ok) {
-      throw new Error(`Steam API returned ${response.status}`);
-    }
-
-    const data = (await response.json()) as SteamOwnedGamesResponse;
-    const games = data.response?.games ?? [];
-
-    if (games.length === 0) {
+    return {
+      source: "steam",
+      games: enrichedGames,
+      steamId,
+      hasApiKey: true,
+    };
+  } catch (error) {
+    if (error instanceof SteamApiError) {
       return {
         source: "mock",
         games: mockGames.games,
+        hasApiKey,
+        error: error.message,
       };
     }
 
     return {
-      source: "steam",
-      games: mapSteamGames(games),
-    };
-  } catch {
-    return {
       source: "mock",
       games: mockGames.games,
+      hasApiKey,
+      error:
+        "Kunde inte synka med Steam just nu. Kontrollera att profil och speldetaljer är offentliga och försök igen.",
     };
   }
 }

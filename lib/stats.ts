@@ -10,5 +10,6 @@ export function calculateStats(games: Game[]): LibraryStats {
       (total, game) => total + game.playtimeMinutes,
       0,
     ),
+    readyToDrop: games.filter((game) => game.klartNog.readyToDrop).length,
   };
 }

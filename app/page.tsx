@@ -12,8 +12,8 @@ export default function Home() {
             Ditt spelbibliotek
           </h1>
           <p className="max-w-2xl text-sm text-slate-300 sm:text-base">
-            Se statistik, filtrera spel och håll koll på vad du spelar, vad som
-            är klart och vad som ligger i backlogen.
+            Synka Steam utan inloggning, se klart nog-poäng och håll koll på vad
+            du spelar, vad som är klart och vad som ligger i backlogen.
           </p>
         </header>
 

@@ -1,8 +1,8 @@
 # Backlogger
 
-**Svenska:** Backlogger är en enkel dashboard för ditt Steam-spelbibliotek. Du ser statistik, söker bland spel och markerar status (backlog, spelar, klart, släppt). Allt sparas i webbläsaren — inget konto behövs.
+**Svenska:** Backlogger är en dashboard för ditt Steam-spelbibliotek. Synka utan inloggning, se statistik, klart nog-poäng och markera status per spel. Allt sparas i webbläsaren.
 
-**English:** Backlogger is a simple dashboard for your Steam game library. View stats, search games, and track status (backlog, playing, finished, dropped). Everything is saved in your browser — no account needed.
+**English:** Backlogger is a dashboard for your Steam game library. Sync without login, view stats, “done enough” scores, and track status per game. Everything is saved in your browser.
 
 ## Köra lokalt / Run locally
 
@@ -14,26 +14,39 @@ npm install
 npm run dev
 ```
 
-3. Öppna i webbläsaren: [http://localhost:4318](http://localhost:4318)
+3. Öppna [http://localhost:4318](http://localhost:4318)
+4. Ange din Steam vanity-URL eller steamid64 i inställningarna.
 
-Utan Steam-nyckel används inbyggd exempeldata.
+### Steam API-nyckel (valfritt men rekommenderat)
+
+1. Gå till [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey) och skapa en gratis nyckel.
+2. Skapa en fil som heter `.env.local` i projektmappen med:
+
+```bash
+STEAM_API_KEY=din_nyckel_här
+```
+
+3. Starta om dev-servern.
+
+Utan nyckel visas exempeldata. Din Steam-profil måste vara **offentlig**, inklusive speldetaljer.
 
 ## Publicera på Vercel / Deploy to Vercel
 
 1. Gå till [vercel.com](https://vercel.com) och logga in.
 2. Klicka **Add New… → Project**.
 3. Välj det här Git-repot och klicka **Deploy**.
-4. Vercel känner av Next.js automatiskt — inga extra inställningar krävs.
+4. Gå till **Project → Settings → Environment Variables**.
+5. Lägg till `STEAM_API_KEY` med din nyckel från [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey).
+6. Klicka **Redeploy** om projektet redan är publicerat.
 
-### Valfritt: riktigt Steam-bibliotek
+Användare anger sedan sitt Steam-id i appen — ingen OAuth eller databas krävs.
 
-I Vercel under **Project → Settings → Environment Variables**, lägg till:
+## Klart nog-poäng
 
-- `STEAM_API_KEY` — din Steam Web API-nyckel
-- `STEAM_ID` — ditt Steam-ID (64-bit)
-
-Saknas dessa variabler används exempeldata.
+- **Tid:** speltid jämfört med HowLongToBeat Main (tak 100)
+- **Achievement-par:** dina upplåsta achievements jämfört med Steam globalt snitt (summan av unlock-% / 100)
+- **Kombinerat:** 50/50 när båda finns; grönt ljus vid ≥ 100
 
 ## Teknik
 
-Next.js, TypeScript, Tailwind CSS, shadcn/ui. Status sparas i `localStorage`.
+Next.js, TypeScript, Tailwind CSS, shadcn/ui. Status och Steam-id sparas i `localStorage`. API-nyckel bara på servern.
