@@ -43,9 +43,11 @@ Användare anger sedan sitt Steam-id i appen — ingen OAuth eller databas kräv
 
 ## Klart nog-poäng
 
-- **Tid:** speltid jämfört med HowLongToBeat Main (tak 100)
-- **Achievement-par:** dina upplåsta achievements jämfört med Steam globalt snitt (summan av unlock-% / 100)
-- **Kombinerat:** 50/50 när båda finns; grönt ljus vid ≥ 100
+**Poäng = Par (%) + HLTB (%)**
+
+- **HLTB:** speltid / HowLongToBeat Main, max 100 %
+- **Par:** din andel upplåsta achievements jämfört med Steam globalt snitt i procent (medel unlock-%). 100 % = du ligger på snittet.
+- **Kombinerat:** summan av de två procenten; grönt ljus vid ≥ 100
 
 ## Teknik
 

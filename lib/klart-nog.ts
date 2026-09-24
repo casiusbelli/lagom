@@ -14,10 +14,26 @@ export type KlartNogResult = {
   hltbMainHours: number | null;
   hltbExtraHours: number | null;
   achievementPar: {
-    unlocked: number;
-    parCount: number;
+    playerPercent: number;
+    globalParPercent: number;
   } | null;
 };
+
+function roundScore(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+export function calculateGlobalParPercent(
+  globalAchievementPercents: number[],
+): number | null {
+  if (globalAchievementPercents.length === 0) return null;
+
+  const mean =
+    globalAchievementPercents.reduce((sum, percent) => sum + percent, 0) /
+    globalAchievementPercents.length;
+
+  return mean > 0 ? mean : null;
+}
 
 export function calculateTimeScore(
   playtimeMinutes: number,
@@ -26,7 +42,8 @@ export function calculateTimeScore(
   if (!hltbMainHours || hltbMainHours <= 0) return null;
 
   const playtimeHours = playtimeMinutes / 60;
-  return Math.round((playtimeHours / hltbMainHours) * 1000) / 10;
+  const rawScore = (playtimeHours / hltbMainHours) * 100;
+  return roundScore(Math.min(rawScore, 100));
 }
 
 export function calculateAchievementScore(
@@ -34,28 +51,22 @@ export function calculateAchievementScore(
   unlockedAchievementCount: number,
 ): {
   score: number | null;
-  par: { unlocked: number; parCount: number } | null;
+  par: { playerPercent: number; globalParPercent: number } | null;
 } {
-  if (globalAchievementPercents.length === 0) {
+  const globalParPercent = calculateGlobalParPercent(globalAchievementPercents);
+  if (!globalParPercent) {
     return { score: null, par: null };
   }
 
-  const parCount = globalAchievementPercents.reduce(
-    (sum, percent) => sum + percent / 100,
-    0,
-  );
-
-  if (parCount <= 0) {
-    return { score: null, par: null };
-  }
-
-  const score = (unlockedAchievementCount / parCount) * 100;
+  const totalAchievements = globalAchievementPercents.length;
+  const playerPercent = (unlockedAchievementCount / totalAchievements) * 100;
+  const score = (playerPercent / globalParPercent) * 100;
 
   return {
-    score: Math.round(score * 10) / 10,
+    score: roundScore(score),
     par: {
-      unlocked: unlockedAchievementCount,
-      parCount: Math.round(parCount * 10) / 10,
+      playerPercent: roundScore(playerPercent),
+      globalParPercent: roundScore(globalParPercent),
     },
   };
 }
@@ -70,22 +81,13 @@ export function calculateKlartNog(input: KlartNogInput): KlartNogResult {
     input.unlockedAchievementCount,
   );
 
-  let combinedScore = 0;
-
-  if (timeScore !== null && achievementScore !== null) {
-    combinedScore = timeScore * 0.5 + achievementScore * 0.5;
-  } else if (timeScore !== null) {
-    combinedScore = timeScore;
-  } else if (achievementScore !== null) {
-    combinedScore = achievementScore;
-  }
-
+  const combinedScore = (timeScore ?? 0) + (achievementScore ?? 0);
   const readyToDrop = combinedScore >= 100;
 
   return {
     timeScore,
     achievementScore,
-    combinedScore: Math.round(combinedScore * 10) / 10,
+    combinedScore: roundScore(combinedScore),
     readyToDrop,
     hltbMainHours: input.hltbMainHours,
     hltbExtraHours: input.hltbExtraHours,

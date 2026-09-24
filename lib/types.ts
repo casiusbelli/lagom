@@ -8,8 +8,8 @@ export type KlartNogScores = {
   hltbMainHours: number | null;
   hltbExtraHours: number | null;
   achievementPar: {
-    unlocked: number;
-    parCount: number;
+    playerPercent: number;
+    globalParPercent: number;
   } | null;
 };
 

@@ -7,9 +7,9 @@ type KlartNogMetersProps = {
   compact?: boolean;
 };
 
-function meterValue(score: number | null): number {
+function meterValue(score: number | null, cap = 100): number {
   if (score === null) return 0;
-  return Math.min(score, 100);
+  return Math.min(score, cap);
 }
 
 function formatScore(score: number | null): string {
@@ -21,6 +21,9 @@ export function KlartNogMeters({ scores, compact = false }: KlartNogMetersProps)
   const readyClass = scores.readyToDrop
     ? "border-emerald-400/40 bg-emerald-500/10"
     : "border-white/10 bg-background/40";
+
+  const hasBothScores =
+    scores.timeScore !== null && scores.achievementScore !== null;
 
   return (
     <div
@@ -46,23 +49,30 @@ export function KlartNogMeters({ scores, compact = false }: KlartNogMetersProps)
         </div>
       </div>
 
+      {hasBothScores && (
+        <p className="text-[11px] text-muted-foreground">
+          Poäng = Par {formatScore(scores.achievementScore)} + HLTB{" "}
+          {formatScore(scores.timeScore)}
+        </p>
+      )}
+
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Tid</span>
+            <span>HLTB</span>
             <span>{formatScore(scores.timeScore)}</span>
           </div>
           <Progress value={meterValue(scores.timeScore)} className="h-2" />
           {scores.hltbMainHours && (
             <p className="text-[11px] text-muted-foreground">
-              HLTB Main: {scores.hltbMainHours} h
+              Main: {scores.hltbMainHours} h · max 100 %
             </p>
           )}
         </div>
 
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Achievement-par</span>
+            <span>Par</span>
             <span>{formatScore(scores.achievementScore)}</span>
           </div>
           <Progress
@@ -71,8 +81,8 @@ export function KlartNogMeters({ scores, compact = false }: KlartNogMetersProps)
           />
           {scores.achievementPar && (
             <p className="text-[11px] text-muted-foreground">
-              {scores.achievementPar.unlocked} upplåsta · globalt snitt{" "}
-              {scores.achievementPar.parCount}
+              Din andel: {scores.achievementPar.playerPercent} % · globalt snitt:{" "}
+              {scores.achievementPar.globalParPercent} %
             </p>
           )}
         </div>
