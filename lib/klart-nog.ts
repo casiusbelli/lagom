@@ -23,6 +23,18 @@ function roundScore(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+export function emptyKlartNog(): KlartNogResult {
+  return {
+    timeScore: null,
+    achievementScore: null,
+    combinedScore: 0,
+    readyToDrop: false,
+    hltbMainHours: null,
+    hltbExtraHours: null,
+    achievementPar: null,
+  };
+}
+
 export function calculateGlobalParPercent(
   globalAchievementPercents: number[],
 ): number | null {

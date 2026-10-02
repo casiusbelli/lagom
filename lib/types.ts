@@ -43,6 +43,7 @@ export type GamesResponse = {
   source: DataSource;
   steamId?: string;
   hasApiKey: boolean;
+  defaultSteamInput?: string;
   message?: string;
   error?: string;
 };

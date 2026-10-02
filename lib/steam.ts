@@ -1,5 +1,5 @@
 import { getHltbTimes } from "@/lib/hltb";
-import { calculateKlartNog } from "@/lib/klart-nog";
+import { calculateKlartNog, emptyKlartNog } from "@/lib/klart-nog";
 import { mockGames } from "@/lib/mock-games";
 import {
   fetchGlobalAchievementPercentages,
@@ -51,17 +51,25 @@ async function enrichGame(
   };
 }
 
+export function getDefaultSteamInput(): string | undefined {
+  const fromEnv =
+    process.env.STEAM_VANITY?.trim() || process.env.STEAM_ID?.trim();
+  return fromEnv || undefined;
+}
+
 export async function getLibraryGames(
   steamInput?: string,
 ): Promise<GamesResponse> {
   const hasApiKey = Boolean(getSteamApiKey());
-  const trimmedInput = steamInput?.trim();
+  const defaultSteamInput = getDefaultSteamInput();
+  const trimmedInput = steamInput?.trim() || defaultSteamInput;
 
   if (!trimmedInput || !hasApiKey) {
     return {
       source: "mock",
       games: mockGames.games,
       hasApiKey,
+      defaultSteamInput,
       message: !hasApiKey
         ? "Ingen Steam API-nyckel på servern — visar exempelbibliotek."
         : "Ange Steam-id eller vanity-URL i inställningarna för att synka.",
@@ -76,17 +84,22 @@ export async function getLibraryGames(
       a.title.localeCompare(b.title, "sv"),
     );
 
-    const enrichedGames = await mapWithConcurrency(
-      sortedGames,
-      4,
-      (game) => enrichGame(steamId, game),
-    );
+    // Return the full library immediately. Klart-nog is filled in later in
+    // batches so a 1000+ game account does not time out on Vercel.
+    const games = sortedGames.map((game) => ({
+      appId: game.appId,
+      title: game.title,
+      playtimeMinutes: game.playtimeMinutes,
+      coverUrl: steamCover(game.appId),
+      klartNog: emptyKlartNog(),
+    }));
 
     return {
       source: "steam",
-      games: enrichedGames,
+      games,
       steamId,
       hasApiKey: true,
+      defaultSteamInput,
     };
   } catch (error) {
     if (error instanceof SteamApiError) {
@@ -94,6 +107,7 @@ export async function getLibraryGames(
         source: "mock",
         games: mockGames.games,
         hasApiKey,
+        defaultSteamInput,
         error: error.message,
       };
     }
@@ -102,8 +116,21 @@ export async function getLibraryGames(
       source: "mock",
       games: mockGames.games,
       hasApiKey,
+      defaultSteamInput,
       error:
         "Kunde inte synka med Steam just nu. Kontrollera att profil och speldetaljer är offentliga och försök igen.",
     };
   }
+}
+
+export async function enrichLibraryGames(
+  steamInput: string,
+  appIds: number[],
+): Promise<RawGame[]> {
+  const steamId = await resolveSteamId(steamInput);
+  const ownedGames = await fetchOwnedGames(steamId);
+  const wanted = new Set(appIds);
+  const selected = ownedGames.filter((game) => wanted.has(game.appId));
+
+  return mapWithConcurrency(selected, 3, (game) => enrichGame(steamId, game));
 }

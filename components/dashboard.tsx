@@ -44,40 +44,88 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  const loadGames = useCallback(async (input?: string) => {
-    setLoading(true);
-    setError(null);
-    setInfoMessage(null);
-
-    try {
-      const storedInput = input ?? getStoredSteamInput();
-      const query = storedInput
-        ? `?steamInput=${encodeURIComponent(storedInput)}`
-        : "";
-      const response = await fetch(`/api/games${query}`);
-
-      if (!response.ok) {
-        throw new Error("Kunde inte hämta spellistan.");
+  const enrichScores = useCallback(
+    async (input: string, library: Game[]) => {
+      const played = library.filter((game) => game.playtimeMinutes > 0);
+      const batchSize = 6;
+      for (let index = 0; index < played.length; index += batchSize) {
+        const batch = played.slice(index, index + batchSize);
+        try {
+          const response = await fetch("/api/games/enrich", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              steamInput: input,
+              appIds: batch.map((game) => game.appId),
+            }),
+          });
+          if (!response.ok) continue;
+          const data = (await response.json()) as { games: Game[] };
+          setGames((current) => {
+            const scores = new Map(
+              data.games.map((game) => [game.appId, game.klartNog]),
+            );
+            return current.map((game) => {
+              const nextScore = scores.get(game.appId);
+              return nextScore ? { ...game, klartNog: nextScore } : game;
+            });
+          });
+        } catch {
+          // Library stays visible if a score batch fails.
+        }
       }
+    },
+    [],
+  );
 
-      const data = (await response.json()) as GamesResponse;
-      setSource(data.source);
-      setHasApiKey(data.hasApiKey);
-      setGames(applyStoredStatuses(data.games));
+  const loadGames = useCallback(
+    async (input?: string) => {
+      setLoading(true);
+      setError(null);
+      setInfoMessage(null);
 
-      if (data.error) {
-        setError(data.error);
-      } else if (data.message) {
-        setInfoMessage(data.message);
+      try {
+        const storedInput = input ?? getStoredSteamInput();
+        const query = storedInput
+          ? `?steamInput=${encodeURIComponent(storedInput)}`
+          : "";
+        const response = await fetch(`/api/games${query}`);
+
+        if (!response.ok) {
+          throw new Error("Kunde inte hämta spellistan.");
+        }
+
+        const data = (await response.json()) as GamesResponse;
+        const resolvedInput = storedInput || data.defaultSteamInput || "";
+        setSource(data.source);
+        setHasApiKey(data.hasApiKey);
+        setGames(applyStoredStatuses(data.games));
+        if (resolvedInput) {
+          setSteamInput(resolvedInput);
+        }
+
+        if (data.error) {
+          setError(data.error);
+        } else if (data.message) {
+          setInfoMessage(data.message);
+        }
+
+        if (data.source === "steam" && resolvedInput) {
+          void enrichScores(
+            resolvedInput,
+            applyStoredStatuses(data.games),
+          );
+        }
+      } catch {
+        setError(
+          "Något gick fel när biblioteket skulle laddas. Försök igen om en stund.",
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError(
-        "Något gick fel när biblioteket skulle laddas. Försök igen om en stund.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [enrichScores],
+  );
 
   useEffect(() => {
     const stored = getStoredSteamInput();

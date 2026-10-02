@@ -24,8 +24,8 @@ export function SteamSettings({
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Steam-synk</h2>
         <p className="text-sm text-muted-foreground">
-          Ange din vanity-URL eller steamid64. Ingen inloggning krävs — profilen
-          måste vara offentlig.
+          Ange din vanity-URL eller steamid64. Ingen inloggning krävs. Om
+          API-nyckeln är din kan biblioteket synkas även med privat profil.
         </p>
       </div>
 
