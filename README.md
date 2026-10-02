@@ -1,8 +1,10 @@
-# Backlogger
+# Lagom
 
-**Svenska:** Backlogger är en dashboard för ditt Steam-spelbibliotek. Synka utan inloggning, se statistik, klart nog-poäng och markera status per spel. Allt sparas i webbläsaren.
+**Svenska:** Lagom är en dashboard för ditt Steam-spelbibliotek. Synka utan inloggning, se statistik, klart nog-poäng och markera status per spel. Allt sparas i webbläsaren.
 
-**English:** Backlogger is a dashboard for your Steam game library. Sync without login, view stats, “done enough” scores, and track status per game. Everything is saved in your browser.
+**English:** Lagom is a dashboard for your Steam game library. Sync without login, view stats, “done enough” scores, and track status per game. Everything is saved in your browser.
+
+Repo: [github.com/casiusbelli/lagom](https://github.com/casiusbelli/lagom)
 
 ## Köra lokalt / Run locally
 
@@ -28,16 +30,15 @@ STEAM_API_KEY=din_nyckel_här
 
 3. Starta om dev-servern.
 
-Utan nyckel visas exempeldata. Din Steam-profil måste vara **offentlig**, inklusive speldetaljer.
+Utan nyckel visas exempeldata. Om nyckeln är skapad på **ditt** Steam-konto kan API:t läsa **ditt** bibliotek även om profilen är privat.
 
 ## Publicera på Vercel / Deploy to Vercel
 
-1. Gå till [vercel.com](https://vercel.com) och logga in.
-2. Klicka **Add New… → Project**.
-3. Välj det här Git-repot och klicka **Deploy**.
-4. Gå till **Project → Settings → Environment Variables**.
-5. Lägg till `STEAM_API_KEY` med din nyckel från [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey).
-6. Klicka **Redeploy** om projektet redan är publicerat.
+1. Gå till [vercel.com](https://vercel.com) och logga in med GitHub.
+2. Klicka **Add New → Project**.
+3. Välj **casiusbelli/lagom** och klicka **Deploy**.
+4. (Valfritt) **Project → Settings → Environment Variables** → `STEAM_API_KEY`.
+5. **Redeploy** om du lägger till nyckeln efter första deploy.
 
 Användare anger sedan sitt Steam-id i appen — ingen OAuth eller databas krävs.
 

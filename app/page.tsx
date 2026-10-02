@@ -6,7 +6,7 @@ export default function Home() {
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-8 sm:px-6 lg:px-8">
         <header className="mb-8 space-y-2">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-300/80">
-            Backlogger
+            Lagom
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Ditt spelbibliotek

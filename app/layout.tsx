@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Backlogger",
+  title: "Lagom",
   description:
     "Dashboard för att se och tracka ditt Steam-spelbibliotek.",
 };
